@@ -1,0 +1,8 @@
+# scikit-learn==1.7.2
+# joblib
+# dvc[azure]
+# Flask
+# waitress
+
+Flask
+gunicorn==21.2.0
