@@ -9,3 +9,17 @@ docker
 git
 ======
 
+Azure
+====
+
+1. /AZURE_CREDENTIALS = Un "compte de service" Azure qui permet à GitHub Actions d'effectuer des actions sur votre abonnement Azure.
+
+a.
+# Voir tous vos abonnements Azure
+az account list --output table
+# Obtenir seulement l'ID de l'abonnement actuel
+az account show --query "id" --output tsv
+
+b.
+# Remplacer par votre SUBSCRIPTION_ID réel (rg-retino = ressourceGroup)
+az ad sp create-for-rbac --name "github-actions-retino" --role contributor --scopes /subscriptions/5467ccfc-222e-4b1f-a01c-73ea1d892d51/resourceGroups/rg-retino --sdk-auth

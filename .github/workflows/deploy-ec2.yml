@@ -1,0 +1,29 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Deploy to EC2
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ec2-user
+        key: ${{ secrets.EC2_SSH_KEY }}
+        script: |
+          cd /home/ec2-user/GitHub-Actions-build-Docker-Hub-registry-Azure-Web-App
+          git pull origin main
+          pip3 install -r requirements.txt
+          sudo pkill gunicorn || true
+          gunicorn --bind 0.0.0.0:5000 src.app:app --daemon
+
+        #   cd src
+        #   nohup gunicorn --bind 0.0.0.0:5000 app:app > app.log 2>&1 &
