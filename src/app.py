@@ -1,55 +1,77 @@
 import os
-import sqlite3 
+import psycopg2  # ← CHANGER: psycopg2 au lieu de sqlite3
 from flask import Flask, request, jsonify, render_template
 import joblib
 import numpy as np
+from dotenv import load_dotenv
+
+# Charger les variables d'environnement
+load_dotenv()
+
+DB_CONFIG = {
+    'host': 'iris-db.cj2wyc8csa0m.ca-central-1.rds.amazonaws.com',
+    'database': 'iris_prod', 
+    'user': 'postgres',
+    'password': os.getenv('DB_PASSWORD'),
+    'port': 5432,
+    'sslmode': 'require'  # ← AJOUTER CETTE LIGNE
+}
 
 app = Flask(__name__)
 
-# Initialiser la base de données
 def init_db():
-    """Initialiser la base de données SQLite"""
-    db_path = os.path.join(os.path.dirname(__file__), 'database', 'feedbacks.db')
-    os.makedirs(os.path.dirname(db_path), exist_ok=True)
-    
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
-    
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS feedbacks (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            sepal_length REAL,
-            sepal_width REAL,
-            petal_length REAL,
-            petal_width REAL,
-            prediction TEXT,
-            approved BOOLEAN,
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    
-    conn.commit()
-    conn.close()
+    """Vérifier la connexion RDS - la table existe déjà"""
+    try:
+        conn = psycopg2.connect(**DB_CONFIG)
+        conn.close()
+        print("✅ Connexion RDS réussie")
+    except Exception as e:
+        print(f"❌ Erreur connexion RDS: {e}")
+
+def save_prediction(features, prediction, confidence):
+    """Sauvegarder une prédiction dans RDS"""
+    try:
+        conn = psycopg2.connect(**DB_CONFIG)
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            INSERT INTO predictions 
+            (sepal_length, sepal_width, petal_length, petal_width, prediction, confidence)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        ''', (*features, str(prediction), float(confidence)))
+        
+        conn.commit()
+        conn.close()
+        print("✅ Prédiction sauvegardée dans RDS")
+        return True
+    except Exception as e:
+        print(f"❌ Erreur sauvegarde RDS: {e}")
+        return False
 
 def save_feedback(features, prediction, approved):
-    """Sauvegarder un feedback utilisateur"""
-    db_path = os.path.join(os.path.dirname(__file__), 'database', 'feedbacks.db')
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
-    
-    cursor.execute('''
-        INSERT INTO feedbacks 
-        (sepal_length, sepal_width, petal_length, petal_width, prediction, approved)
-        VALUES (?, ?, ?, ?, ?, ?)
-    ''', (*features, prediction, approved))
-    
-    conn.commit()
-    conn.close()
+    """Sauvegarder un feedback dans RDS"""
+    try:
+        conn = psycopg2.connect(**DB_CONFIG)
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            INSERT INTO predictions 
+            (sepal_length, sepal_width, petal_length, petal_width, prediction, feedback)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        ''', (*features, prediction, approved))
+        
+        conn.commit()
+        conn.close()
+        print("✅ Feedback sauvegardé dans RDS")
+        return True
+    except Exception as e:
+        print(f"❌ Erreur sauvegarde feedback RDS: {e}")
+        return False
 
-# Initialiser la base de données
+# Initialiser la connexion RDS
 init_db()
 
-# CHARGER LE MODÈLE (AJOUTEZ CETTE PARTIE)
+# Charger le modèle
 model_path = os.path.join(os.path.dirname(__file__), 'model', 'iris_model.pkl')
 model = joblib.load(model_path)
 
@@ -67,9 +89,12 @@ def predict():
         prediction = model.predict([features])[0]
         confidence = np.max(model.predict_proba([features]))
         
+        # SAUVEGARDER DANS RDS
+        save_prediction(features, prediction, confidence)
+        
         return jsonify({
-            'prediction': str(prediction),  # ← CONVERTIR en string
-            'confidence': float(confidence)  # ← CONVERTIR en float Python
+            'prediction': str(prediction),
+            'confidence': float(confidence)
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 400
