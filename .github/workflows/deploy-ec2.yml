@@ -48,7 +48,14 @@ jobs:
         username: ec2-user
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
+          # ARRÊTER l'ancienne app Flask
+          sudo pkill -f "python.*app.py" || true
+          sudo pkill -f gunicorn || true
+          sleep 2
+          
+          # DÉPLOIEMENT Docker
           aws ecr get-login-password --region ca-central-1 | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
           docker pull ${{ secrets.ECR_REGISTRY }}:${{ github.sha }}
           docker stop iris-app || true
+          docker rm iris-app || true
           docker run -d -p 5000:5000 --name iris-app ${{ secrets.ECR_REGISTRY }}:${{ github.sha }}
