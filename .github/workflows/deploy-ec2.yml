@@ -9,6 +9,7 @@ env:
   ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
   ECR_REPOSITORY: iris-app
   IMAGE_TAG: ${{ github.sha }}
+  IMAGE_NAME: ${{ secrets.ECR_REGISTRY }}/iris-app  # ← AJOUTEZ CETTE LIGNE
 
 jobs:
   deploy:
