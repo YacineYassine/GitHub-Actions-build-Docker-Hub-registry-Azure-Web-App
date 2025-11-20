@@ -19,15 +19,46 @@ DB_CONFIG = {
 
 app = Flask(__name__)
 
+# def init_db():
+#     """Vérifier la connexion RDS - la table existe déjà"""
+#     try:
+#         # DEBUG COMPLET
+#         print("=== DEBUG ENVIRONMENT ===")
+#         print(f"DB_PASSWORD: {'SET' if os.getenv('DB_PASSWORD') else 'NOT SET'}")
+#         print(f"All DB environment variables:")
+#         for key, value in os.environ.items():
+#             if 'DB' in key or 'PASSWORD' in key:
+#                 print(f"  {key}: {'*' * len(value) if value else 'NOT SET'}")
+        
+#         conn = psycopg2.connect(**DB_CONFIG)
+#         conn.close()
+#         print("✅ Connexion RDS réussie")
+#     except Exception as e:
+#         print(f"❌ Erreur connexion RDS: {e}")
+
 def init_db():
     """Vérifier la connexion RDS - la table existe déjà"""
     try:
-        print(f"🔧 DB_PASSWORD length: {len(os.getenv('DB_PASSWORD', '')) if os.getenv('DB_PASSWORD') else 'NOT SET'}")
+        # DEBUG COMPLET
+        print("=== DEBUG ENVIRONMENT ===")
+        print(f"DB_PASSWORD: {'SET' if os.getenv('DB_PASSWORD') else 'NOT SET'}")
+        if os.getenv('DB_PASSWORD'):
+            print(f"DB_PASSWORD length: {len(os.getenv('DB_PASSWORD'))}")
+        
+        print(f"All DB environment variables:")
+        for key, value in os.environ.items():
+            if 'DB' in key or 'PASSWORD' in key or 'AWS' in key:
+                print(f"  {key}: {'*' * len(value) if value else 'NOT SET'}")
+        
+        print(f"DB_CONFIG: { {k: v if k != 'password' else '***' for k, v in DB_CONFIG.items()} }")
+        
         conn = psycopg2.connect(**DB_CONFIG)
         conn.close()
         print("✅ Connexion RDS réussie")
     except Exception as e:
         print(f"❌ Erreur connexion RDS: {e}")
+        import traceback
+        traceback.print_exc()
 
 def save_prediction(features, prediction, confidence):
     """Sauvegarder une prédiction dans RDS"""
