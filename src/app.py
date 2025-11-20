@@ -6,7 +6,7 @@ import numpy as np
 from dotenv import load_dotenv
 
 # Charger les variables d'environnement
-load_dotenv()
+#load_dotenv()
 
 DB_CONFIG = {
     'host': 'iris-db.cj2wyc8csa0m.ca-central-1.rds.amazonaws.com',
@@ -22,6 +22,7 @@ app = Flask(__name__)
 def init_db():
     """Vérifier la connexion RDS - la table existe déjà"""
     try:
+        print(f"🔧 DB_PASSWORD length: {len(os.getenv('DB_PASSWORD', '')) if os.getenv('DB_PASSWORD') else 'NOT SET'}")
         conn = psycopg2.connect(**DB_CONFIG)
         conn.close()
         print("✅ Connexion RDS réussie")
