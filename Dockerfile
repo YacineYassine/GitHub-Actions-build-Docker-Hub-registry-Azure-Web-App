@@ -1,23 +1,19 @@
-
-# Utiliser une image Python officielle
 FROM python:3.9-slim
 
-# Définir le répertoire de travail
 WORKDIR /app
 
-# Copier les fichiers de requirements d'abord (pour mieux utiliser le cache Docker)
+# Copier les requirements d'abord (optimisation cache Docker)
 COPY requirements.txt .
-
-# Installer les dépendances
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copier le reste de l'application
+# Copier le code de l'application
 COPY . .
+
+# Variables d'environnement
+ENV PORT=5000
 
 # Exposer le port
 EXPOSE 5000
 
-# Commande pour lancer l'application
-# CMD ["python", "src/app.py"]
-# Utiliser Gunicorn qui est plus robuste
+# Commande de démarrage
 CMD ["gunicorn", "--bind", "0.0.0.0:5000", "src.app:app"]
