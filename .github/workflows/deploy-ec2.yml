@@ -53,9 +53,11 @@ jobs:
           sudo pkill -f gunicorn || true
           sleep 2
           
-          # DÉPLOIEMENT Docker
+          # DÉPLOIEMENT Docker avec variables d'environnement
           aws ecr get-login-password --region ca-central-1 | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
           docker pull ${{ secrets.ECR_REGISTRY }}:${{ github.sha }}
           docker stop iris-app || true
           docker rm iris-app || true
-          docker run -d -p 5000:5000 --name iris-app ${{ secrets.ECR_REGISTRY }}:${{ github.sha }}
+          docker run -d -p 5000:5000 --name iris-app \
+            -e DB_PASSWORD="${{ secrets.DB_PASSWORD }}" \
+            ${{ secrets.ECR_REGISTRY }}:${{ github.sha }}
