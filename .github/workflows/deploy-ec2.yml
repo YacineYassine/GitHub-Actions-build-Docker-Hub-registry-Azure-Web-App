@@ -50,7 +50,7 @@ jobs:
         script: |
             # Pull la bonne image
             aws ecr get-login-password --region ca-central-1 | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
-            docker pull ${{ secrets.ECR_REGISTRY }}/iris-app:${{ github.sha }}
+            docker pull ${{ steps.login-ecr.outputs.registry }}/iris-app:${{ github.sha }}
             
             # Arrêter l'ancien container
             docker stop iris-app || true
@@ -62,4 +62,4 @@ jobs:
                 -e DB_HOST="iris-db.cj2wyc8csa0m.ca-central-1.rds.amazonaws.com" \
                 -e DB_NAME="iris_prod" \
                 -e DB_USER="postgres" \
-                ${{ secrets.ECR_REGISTRY }}/iris-app:${{ github.sha }}
+                ${{ steps.login-ecr.outputs.registry }}/iris-app:${{ github.sha }}
